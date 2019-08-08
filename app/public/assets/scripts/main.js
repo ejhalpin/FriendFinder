@@ -30,6 +30,7 @@ $("#auth-swap").on("click", () => {
 //submit the auth form
 $("#login-submit").on("click", event => {
   event.preventDefault();
+  var endpoint = "/auth";
   var text = $("#login-submit").text();
   var credentials = {
     method: text,
@@ -45,13 +46,23 @@ $("#login-submit").on("click", event => {
     credentials.user = $("#signup-name")
       .val()
       .trim();
+    endpoint += "/newuser";
   }
+
   // both sign up and login map to the same endpoint. The data returned by the server is placed in the session storage
-  $.post("/api/signup", credentials).then(res => {
+  $.post(endpoint, credentials).then(res => {
+    if (res.status === 409) {
+      //add some form error handling for non unique entries or incorrect email/password entries
+      console.log(res.reason);
+    }
+    if (res.status === 500) {
+      //handle internal server errors on the server side, bro.
+      console.log(res.reason);
+    }
     //set the friend finder data instance in session storage
     sessionStorage.ff_instance = {
       token: res.body.token,
-      quantum: res.body.id,
+      quantum: res.body.quantum,
       photo: res.body.photo,
       name: res.body.name
     };
