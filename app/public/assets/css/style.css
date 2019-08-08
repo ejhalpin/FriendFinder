@@ -1,0 +1,38 @@
+#login-form {
+  padding: 10px;
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+
+.tooltray {
+  display: none;
+}
+
+.pad {
+  padding: 10px;
+}
+
+#update-picture,
+#update-brand {
+  margin: 5px 0;
+}
+
+.shift {
+  margin-top: 10px;
+}
+
+.jumbotron {
+  padding: 2rem 2rem;
+}
+
+.selected {
+  border-color: green;
+}
+
+.hidden {
+  display: none;
+}
+
+.text-right {
+  flex: 1 1 auto;
+}
