@@ -13,7 +13,7 @@ let connection = mysql.createConnection({
   port: 3306,
   user: process.env.SQL_NAME,
   password: process.env.SQL_PASS,
-  database: "friend_dbase"
+  database: "friends_db"
 });
 
 connection.connect(err => {
@@ -22,7 +22,7 @@ connection.connect(err => {
 //===============================================================
 module.exports = function(app) {
   //an auth endpoint to handle exisiting user logins
-  app.get("/auth", (req, res) => {
+  app.post("/auth", (req, res) => {
     loginUser(req.body.email, req.body.pass).then(response => {
       res.status(response.status).json(response);
     });
@@ -30,14 +30,14 @@ module.exports = function(app) {
 
   //an auth endpoint to handle new user generation
   app.post("/auth/newuser", (req, res) => {
-    createUserProfile(req.body.email, req.body.pass, req.body.name).then(response => {
+    createUserProfile(req.body.email, req.body.pass, req.body.user).then(response => {
       res.status(response.status).json(response);
     });
   });
 
   //an auth endpoint to handle logouts
-  app.post("/auth/logout", (req, res) => {
-    connection.query("UPDATE user_profile SET ? WHERE ?", [{ status: false }, { id: req.body.quantum }], err => {
+  app.post("/auth/logout/:id", (req, res) => {
+    connection.query("UPDATE user_profile SET ? WHERE ?", [{ status: false }, { id: req.params.id }], err => {
       if (err) {
         return res.status(500).json({
           status: 500,
@@ -49,6 +49,88 @@ module.exports = function(app) {
         status: 200,
         reason: "user successfully logged out"
       });
+    });
+  });
+
+  //an api endpoint to load a user profile element (singular)
+  app.get("/api/user/:id/:item", (req, res) => {
+    var querystring = "SELECT " + req.params.item + " FROM user_profile WHERE id = " + req.params.id;
+    connection.query(querystring, (err, data) => {
+      if (err) {
+        return res.status(500).json({
+          status: 500,
+          reason: "error fetching " + req.params.item + " from user profile with id (" + req.params.id + ")"
+        });
+      }
+      res.json({
+        status: 200,
+        reason: "data retrieved successfully",
+        data: data[0]
+      });
+    });
+  });
+
+  //an api endpoint to return the user match data
+  app.get("/api/table/:id/table", (req, res) => {
+    var querystring = "SELECT * FROM table_" + req.params.id;
+    connection.query(querystring, (err, data) => {
+      if (err) {
+        return res.status(500).json({
+          status: 500,
+          reason: "error fetching data from user table"
+        });
+      }
+      res.json({
+        status: 200,
+        reason: "user table data successfully retrieved",
+        rows: data
+      });
+    });
+  });
+
+  //an endpoint to update user data (1 col per request) --TODO make it a put
+  app.post("/api/user", (req, res) => {
+    connection.query("UPDATE user_profile SET ? WHERE ?", req.body.data, err => {
+      if (err) {
+        res.status(500).json({
+          status: 500,
+          reason: "error updating user profile"
+        });
+      }
+    });
+    res.status(200).json({
+      status: 200,
+      reason: "user profile updated successfully"
+    });
+  });
+
+  //an endpoint to fetch the top 12 trending giphy images
+  app.get("/api/giphy", (req, res) => {
+    var apiKey = process.env.API_KEY;
+    console.log(apiKey);
+    axios.get("https://api.giphy.com/v1/stickers/trending?api_key=" + process.env.API_KEY + "&limit=12").then(response => {
+      var object = {
+        urls: []
+      };
+      response.data.data.forEach(entry => {
+        object.urls.push(entry.images.fixed_width.url);
+      });
+      res.json(object);
+    });
+  });
+
+  //an andpoint to serve up the survey page
+  app.get("/surveys", (req, res) => {
+    //get the survey list from the database and send back the survey page
+    connection.query("SELECT * FROM surveys", (err, data) => {
+      if (err) {
+        return res.status(500).end();
+      }
+      //format the data for handlebars
+      var surveyData = {
+        data: data
+      };
+      res.render("index", surveyData);
     });
   });
 };
@@ -126,6 +208,7 @@ function createUserProfile(salt, pass, user) {
                   reason: "error fetching user data"
                 });
               }
+
               //data holds the user data key-value pairs
               var response = {
                 status: 200,
@@ -135,8 +218,11 @@ function createUserProfile(salt, pass, user) {
                 quantum: data[0].id,
                 photo: data[0].photo
               };
+
               //create a user table that will store survey names and corresponding match data
-              connection.query("CREATE TABLE table_" + response.id.toString() + "(survey_name varchar(32), match(80), score int)", (err, data) => {
+              var sql = "CREATE TABLE table_" + response.quantum + " (survey_name VARCHAR(32), match_name VARCHAR(80), score INTEGER(11))";
+
+              connection.query(sql, (err, data) => {
                 if (err) {
                   resolve({
                     status: 500,
@@ -192,7 +278,7 @@ function loginUser(salt, pass) {
             status: 200,
             reason: "user successfully logged in",
             token: derivedKey.toString("hex"),
-            name: user,
+            name: data[0].name,
             quantum: data[0].id,
             photo: data[0].photo
           };

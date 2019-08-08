@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <!-- bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" />
+    <!-- local stylesheet -->
+    <link rel="stylesheet" type="text/css" href="assets/css/style.css" />
+    <!-- jquery -->
+    <script src="https://code.jquery.com/jquery.js"></script>
+    <!-- bootstrap js -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <!-- font-awesome -->
+    <script src="https://kit.fontawesome.com/a65d4a7d3c.js"></script>
+
+    <title>Friend Finder</title>
+  </head>
+  <body class="bg-dark">
+    <div class="container">
+      <div class="jumbotron text-center">
+        <h1>Friend&nbsp;<span class="fas fa-hands-helping"></span>&nbsp;Finder</h1>
+        <hr />
+        <br />
+        <nav class="navbar navbar-dark navbar-expand-lg bg-dark">
+          <a class="navbar-brand" href="/">Friend Finder</a>
+          <button
+            class="navbar-toggler"
+            type="button"
+            data-toggle="collapse"
+            data-target="#navbarText"
+            aria-controls="navbarText"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarText">
+            <ul class="navbar-nav mr-auto">
+              <li class="nav-item">
+                <a class="nav-link" id="logout" href="#">logout</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/survey">surveys</a>
+              </li>
+            </ul>
+            <span class="navbar-text" id="phrase">
+              <!-- dynamic text -->
+            </span>
+          </div>
+        </nav>
+      </div>
+    </div>
+
+    <div class="container" id="target">
+      <div class="container-fluid bg-light pad">
+        <div class="row">
+          <div class="col-12">
+            <div class="card" style="width: 100%;">
+              <div class="card-header">
+                Your Profile
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-3">
+                    <h5 id="user-name" class="card-title">user name</h5>
+                  </div>
+                  <div class="col-9">
+                    <div class="form-check nav-fill text-right">
+                      <input type="checkbox" class="form-check-input" id="localStorage" />
+                      <label class="form-check-label" for="localStorage">keep me logged in</label>
+                    </div>
+                  </div>
+                </div>
+
+                <hr />
+                <div class="row">
+                  <div class="col-6">
+                    <div class="text-center">
+                      <figure class="figure">
+                        <img id="profile-image" src="" alt="profileimage" class="img-thumbnail mx-auto" />
+                        <figcaption class="figure-caption text-right">
+                          <button id="update-picture" type="button" class="btn btn-sm btn-outline-primary">update</button>
+                        </figcaption>
+                      </figure>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="form-group shift">
+                      <label for="brand-statement">Your Brand Statement</label>
+                      <textarea class="form-control form-control-plaintext" id="brand-statement" rows="4" readonly></textarea>
+                      <small id="charlimit" class="form-text text-muted hidden"> <span id="numchar">255</span> characters remaining. </small>
+                      <div id="brand-button-box" class="text-right">
+                        <button id="update-brand" type="button" class="btn btn-sm btn-outline-primary">edit</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-12 ">
+                    <div class="text-center"><h4>Matches</h4></div>
+                  </div>
+                  <hr />
+                </div>
+                <div class="row">
+                  <div class="col-4">survey</div>
+                  <div class="col-4">name</div>
+                  <div class="col-4">score</div>
+                </div>
+                <hr />
+                <div id="survey-data">
+                  <!-- survey match data goes here -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="img-modal" class="modal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Select a New Image</h5>
+            <button id="close-modal-x" type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body"></div>
+          <div class="modal-footer">
+            <button id="setImage" type="button" class="btn btn-primary">Save changes</button>
+            <button id="close-modal" type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- modal tray -->
+    <div class="tooltray">
+      <button id="cancel-brand-update" type="button" class="btn btn-sm btn-outline-secondary">cancel</button>
+      <div id="custom-url-div" class="input-group mb-3">
+        <input
+          id="custom-url"
+          type="text"
+          class="form-control"
+          placeholder="custom image url"
+          aria-label="A custom image url"
+          aria-describedby="basic-addon2"
+        />
+        <div class="input-group-append">
+          <button id="use-custom-url" class="btn btn-outline-secondary" type="button">use</button>
+        </div>
+      </div>
+    </div>
+    <!-- local scripts -->
+    <script src="assets/scripts/profile.js" type="text/javascript"></script>
+    <script src="assets/scripts/data.js" type="text/javascript"></script>
+  </body>
+</html>

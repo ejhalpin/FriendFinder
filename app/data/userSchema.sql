@@ -6,7 +6,8 @@ use friends_db;
 
 create table user_profile
 (
-  id tinyint not null auto_increment,
+  id int not null
+  auto_increment,
   token varchar
   (16),
   photo varchar
@@ -18,7 +19,8 @@ create table user_profile
   status boolean,
   brand varchar
   (255),
-  primary key(id)
+  primary key
+  (id)
 );
 
   create table surveys

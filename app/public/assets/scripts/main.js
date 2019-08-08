@@ -1,14 +1,24 @@
+var local, session;
+if (localStorage.getItem("instance")) {
+  local = JSON.parse(localStorage.getItem("instance"));
+}
+if (sessionStorage.getItem("instance")) {
+  session = JSON.parse(sessionStorage.getItem("instance"));
+}
 $(document).ready(() => {
   //check session and local storage for a token. If found, load the profile page, otherwise, load the login page
-  if (sessionStorage.ff_instance || localStorage.ff_instance) {
-    location.replace("/profile");
+  if (local) {
+    sessionStorage.setItem("instance", JSON.stringify(local));
+    location.href = "/profile";
+  }
+  if (session) {
+    location.href = "/profile";
   }
 });
 
 //toggle between the login and signup forms
 $("#auth-swap").on("click", () => {
   var text = $("#auth-swap").text();
-  console.log(text);
   switch (text) {
     case "sign up":
       $("#signup")
@@ -59,13 +69,16 @@ $("#login-submit").on("click", event => {
       //handle internal server errors on the server side, bro.
       console.log(res.reason);
     }
+
     //set the friend finder data instance in session storage
-    sessionStorage.ff_instance = {
-      token: res.body.token,
-      quantum: res.body.quantum,
-      photo: res.body.photo,
-      name: res.body.name
+    var instance = {
+      token: res.token,
+      quantum: res.quantum,
+      photo: res.photo || "",
+      name: res.name
     };
-    location.replace("/profile");
+    sessionStorage.setItem("instance", JSON.stringify(instance));
+
+    location.href = "/profile";
   });
 });
