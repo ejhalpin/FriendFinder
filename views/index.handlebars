@@ -1,8 +1,16 @@
-{{#each surveyData}}
 <div class="row">
-  <div class="col-4"><a href="/survey/" +{{name}}>{{name}}</a></div>
-  <div class="col-4">{{num_questions}}</div>
-  <div class="col-4">{{created_by}}</div>
+  <div class="col-2">ID</div>
+  <div class="col-5">Survey</div>
+  <div class="col-2">Questions</div>
+  <div class="col-3">Author</div>
+  <hr />
+</div>
+{{#each data}}
+<div class="row">
+  <div class="col-2">{{id}}</div>
+  <div class="col-5"><a href="/surveys/{{id}}">{{name}}</a></div>
+  <div class="col-2">{{num_questions}}</div>
+  <div class="col-3">{{created_by}}</div>
   <hr />
 </div>
 {{/each}}

@@ -133,6 +133,32 @@ module.exports = function(app) {
       res.render("index", surveyData);
     });
   });
+
+  // an endpoint to serve up a survey based on the id
+  app.get("/surveys/:id", (req, res) => {
+    //get the survey data
+    connection.query("SELECT * from survey_" + req.params.id, (err, data) => {
+      if (err) {
+        res.status(500).end();
+      }
+      //get the survey inforation
+      connection.query("SELECT * FROM surveys WHERE ?", [{ id: req.params.id }], (err, props) => {
+        if (err) {
+          res.status(500).end();
+        }
+        var surveyData = {
+          title: props[0].name,
+          author: props[0].created_by,
+          questions: []
+        };
+        Object.keys(data[0]).forEach(key => {
+          surveyData.questions.push(data[0][key]);
+        });
+        res.render("survey", surveyData);
+      });
+      //build the object to be passed into handlebars render
+    });
+  });
 };
 
 // private methods for authentication

@@ -1,0 +1,25 @@
+<div class="row">
+  <div class="col-auto text-left">
+    <h1>{{title}}</h1>
+  </div>
+  <div class="col-auto text-right">
+    <h4>{{author}}</h4>
+  </div>
+</div>
+<hr />
+{{!-- loop through the questions --}}
+{{#each questions}}
+<div class="text-center">
+  <h3>Question {{increment @index}}</h1>
+</div>
+<p class="text-center">{{this}}</p>
+<div class="radiogroup" data-selected="">
+  <div class="endlabel">disagree</div>
+  <div class="radio radio-big dis-strong" data-value="0"></div>
+  <div class="radio radio-med dis-mild" data-value="1"></div>
+  <div class="radio radio-sm neutral" data-value="2"></div>
+  <div class="radio radio-med agg-mild" data-value="3"></div>
+  <div class="radio radio-big agg-strong" data-value="4"></div>
+  <div class="endlabel">agree</div>
+</div>
+{{/each}}

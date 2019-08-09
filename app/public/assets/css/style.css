@@ -36,3 +36,54 @@
 .text-right {
   flex: 1 1 auto;
 }
+
+.radiogroup {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 28px;
+}
+
+.radio {
+  border-radius: 50%;
+  border: 1px solid lightgray;
+  margin: 0 5px;
+}
+
+.radio-big {
+  width: 26px;
+  height: 26px;
+}
+
+.radio-med {
+  width: 22px;
+  height: 22px;
+}
+
+.radio-sm {
+  width: 18px;
+  height: 18px;
+}
+
+.dis-strong {
+  border-color: darkred;
+}
+.dis-mild {
+  border-color: lightcoral;
+}
+.neutral {
+  border-color: lightgray;
+}
+.agg-mild {
+  border-color: lightseagreen;
+}
+.agg-strong {
+  border-color: darkgreen;
+}
+
+.endlabel {
+  margin: 0 10px;
+}
