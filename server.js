@@ -29,7 +29,7 @@ app.set("view engine", "handlebars");
 //Bring in the html and api routes, passing in the express instance
 //===============================================================
 require("./app/routing/apiRoutes")(app);
-require("./app/routing/htmlroutes")(app);
+require("./app/routing/htmlRoutes")(app);
 //===============================================================
 
 //Give our server ears
