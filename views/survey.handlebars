@@ -1,6 +1,6 @@
 <div class="row">
   <div class="col-auto text-left">
-    <h1>{{title}}</h1>
+    <h1 id="title">{{title}}</h1>
   </div>
   <div class="col-auto text-right">
     <h4>{{author}}</h4>
@@ -23,3 +23,31 @@
   <div class="endlabel">agree</div>
 </div>
 {{/each}}
+<div class="button-box">
+  <div id="alert-insert">
+
+  </div>
+  <button id="submit" type="button" class="btn btn-lg btn-warning">update</button>
+</div>
+<div class="tooltray">
+  <div id="id">{{id}}</div>
+  <div id="nq">{{nq}}</div>
+</div>
+<div id="modal" class="modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Survey Results</h5>
+        <button id="close-modal-x" type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body text-center">
+        <img id="loading-gif" class="img-fluid" src="assets/images/loading.gif" />
+      </div>
+      <div class="modal-footer">
+        <button id="close-modal" type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

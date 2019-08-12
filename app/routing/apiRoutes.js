@@ -1,110 +1,66 @@
 //Pull in dependencies
 //===============================================================
-let mysql = require("mysql");
-require("dotenv").config();
+let query = require("../orm/query");
 let crypto = require("crypto");
 let axios = require("axios");
 //===============================================================
+//to leverage the power of promises within the query module, export an async function
+module.exports = async function(app) {
+  //an api endpoint to handle all authentication requests
+  app.post("/auth/:method", (req, res) => {
+    //all incoming requests need to have the methode:<type> key-value pair in the body
+    switch (req.params.method) {
+      case "signup":
+        createNewUser(req.body.name, req.body.email, req.body.password).then(function(response) {
+          res.json(response);
+        });
+        break;
+      case "login":
+        loginUser(req.body.email, req.body.password).then(response => {
+          res.json(response);
+        });
+        break;
+      case "logout":
+        query.update("user_profile", { status: false }, { id: req.body.id }).then(response => {
+          res.status(response.status).json(response);
+        });
+    }
+  });
 
-//build the database connection and connect
-//===============================================================
-let connection = mysql.createConnection({
-  host: "localhost",
-  port: 3306,
-  user: process.env.SQL_NAME,
-  password: process.env.SQL_PASS,
-  database: "friends_db"
-});
+  //an endpoint to retreive match data
+  app.post("/match/:id", (req, res) => {
+    query.select("user_profile", "*", { id: req.params.id }).then(response => {
+      res.status(response.status).json({ name: response.data[0].name, photo: response.data[0].photo, brand: response.data[0].brand });
+    });
+  });
 
-connection.connect(err => {
-  if (err) throw err;
-});
-//===============================================================
-module.exports = function(app) {
-  //an auth endpoint to handle exisiting user logins
-  app.post("/auth", (req, res) => {
-    loginUser(req.body.email, req.body.pass).then(response => {
+  //an endpoint to deliver an item from the user_profile table
+  app.get("/user/:id/:item", (req, res) => {
+    query.select("user_profile", req.params.item, { id: req.params.id }).then(response => {
+      console.log(response);
+      if (response.status === 200) {
+        return res.json({ status: 200, reason: "success", data: response.data[0] });
+      }
+
       res.status(response.status).json(response);
     });
   });
 
-  //an auth endpoint to handle new user generation
-  app.post("/auth/newuser", (req, res) => {
-    createUserProfile(req.body.email, req.body.pass, req.body.user).then(response => {
-      res.status(response.status).json(response);
+  //an endpoint to deliver a user's match data from the matches table
+  app.get("/api/match/:id", (req, res) => {
+    getMatchData(req.params.id).then(response => {
+      res.json(response);
     });
   });
 
-  //an auth endpoint to handle logouts
-  app.post("/auth/logout/:id", (req, res) => {
-    connection.query("UPDATE user_profile SET ? WHERE ?", [{ status: false }, { id: req.params.id }], err => {
-      if (err) {
-        return res.status(500).json({
-          status: 500,
-          reason: "error updating user status"
-        });
-      }
-      //status updated successfully
-      res.status(200).json({
-        status: 200,
-        reason: "user successfully logged out"
-      });
-    });
-  });
-
-  //an api endpoint to load a user profile element (singular)
-  app.get("/api/user/:id/:item", (req, res) => {
-    var querystring = "SELECT " + req.params.item + " FROM user_profile WHERE id = " + req.params.id;
-    connection.query(querystring, (err, data) => {
-      if (err) {
-        return res.status(500).json({
-          status: 500,
-          reason: "error fetching " + req.params.item + " from user profile with id (" + req.params.id + ")"
-        });
-      }
-      res.json({
-        status: 200,
-        reason: "data retrieved successfully",
-        data: data[0]
-      });
-    });
-  });
-
-  //an api endpoint to return the user match data
-  app.get("/api/table/:id/table", (req, res) => {
-    var querystring = "SELECT * FROM table_" + req.params.id;
-    connection.query(querystring, (err, data) => {
-      if (err) {
-        return res.status(500).json({
-          status: 500,
-          reason: "error fetching data from user table"
-        });
-      }
-      res.json({
-        status: 200,
-        reason: "user table data successfully retrieved",
-        rows: data
-      });
-    });
-  });
-
-  //an endpoint to update user data (1 col per request) --TODO make it a put
+  //an endpoint to update user data
   app.post("/api/user", (req, res) => {
-    connection.query("UPDATE user_profile SET ? WHERE ?", req.body.data, err => {
-      if (err) {
-        res.status(500).json({
-          status: 500,
-          reason: "error updating user profile"
-        });
-      }
-    });
-    res.status(200).json({
-      status: 200,
-      reason: "user profile updated successfully"
+    query.update("user_profile", req.body.data[0], req.body.data[1]).then(response => {
+      res.status(response.status).json(response);
     });
   });
 
-  //an endpoint to fetch the top 12 trending giphy images
+  //an endpoint to fetch the top 12 trending giphy stickers
   app.get("/api/giphy", (req, res) => {
     var apiKey = process.env.API_KEY;
     console.log(apiKey);
@@ -120,207 +76,354 @@ module.exports = function(app) {
   });
 
   //an andpoint to serve up the survey page
-  app.get("/surveys", (req, res) => {
+  app.get("/survey", (req, res) => {
     //get the survey list from the database and send back the survey page
-    connection.query("SELECT * FROM surveys", (err, data) => {
-      if (err) {
-        return res.status(500).end();
+    query.selectAll("surveys").then(response => {
+      if (response.status === 200) {
+        var surveyData = {
+          data: response.data
+        };
+        return res.render("index", surveyData);
       }
-      //format the data for handlebars
-      var surveyData = {
-        data: data
-      };
-      res.render("index", surveyData);
+      res.status(response.status).json(response);
     });
   });
 
-  // an endpoint to serve up a survey based on the id
-  app.get("/surveys/:id", (req, res) => {
-    //get the survey data
-    connection.query("SELECT * from survey_" + req.params.id, (err, data) => {
-      if (err) {
-        res.status(500).end();
+  //an api endpoint to get survey questions by id
+  app.get("/survey/:id", (req, res) => {
+    query.select("surveys", "*", { id: req.params.id }).then(response => {
+      if (response.status !== 200) {
+        res.status(response.status).json(response);
       }
-      //get the survey inforation
-      connection.query("SELECT * FROM surveys WHERE ?", [{ id: req.params.id }], (err, props) => {
-        if (err) {
-          res.status(500).end();
+      var data = response.data[0];
+      var questions = [];
+      for (var i = 0; i < 15; i++) {
+        var key = "q" + i;
+        if (data[key]) {
+          questions.push(data[key]);
         }
-        var surveyData = {
-          title: props[0].name,
-          author: props[0].created_by,
-          questions: []
-        };
-        Object.keys(data[0]).forEach(key => {
-          surveyData.questions.push(data[0][key]);
+      }
+      var surveyData = {
+        author: data.author,
+        title: data.name,
+        id: data.id,
+        nq: data.nq,
+        questions: questions
+      };
+      res.render("survey", surveyData);
+    });
+  });
+
+  //an endpoint to submit survey results and get back match data
+  app.post("/survey/submit", (req, res) => {
+    console.log(req.body);
+    query.select("scores", "*", { survey_id: req.body.survey_id }).then(scores => {
+      saveAnswers(req.body);
+      var array = [];
+      var D = parseInt(req.body.nq) * 4;
+      var results = req.body.results.split(",");
+      var data = scores.data;
+      data.forEach(entry => {
+        if (entry.user_id === req.body.user_id) return; //don't score against yourself
+        var values = entry.answers.split(",");
+        var score = 0;
+        values.forEach((value, index) => {
+          score += Math.abs(parseInt(value) - parseInt(results[index]));
         });
-        res.render("survey", surveyData);
+        array.push({
+          match_id: entry.user_id,
+          survey_id: req.body.survey_id,
+          score: ((D - score) / D) * 100
+        });
       });
-      //build the object to be passed into handlebars render
+
+      //check to see if scores are empty
+      if (array.length === 0) {
+        return res.json({
+          status: 300,
+          reason: "no data"
+        });
+      }
+      array.sort((a, b) => {
+        return b.score - a.score;
+      });
+      var match = array[0];
+      //wirte the match data to the database for both users
+      recordMatchData(req.body.user_id, match).then(response => {
+        if (response.status !== 200) {
+          res.status(response.status).json(response);
+        }
+        res.status(200).json(match);
+      });
+    });
+  });
+
+  //an endpoint to store a new survey
+  app.post("/survey/create", (req, res) => {
+    //organize the data
+    var dataObject = {
+      name: req.body.name,
+      author: req.body.author,
+      nq: req.body.nq
+    };
+    req.body.questions.forEach((value, index) => {
+      var key = "q" + index;
+      dataObject[key] = value;
+    });
+    query.insert("surveys", dataObject).then(response => {
+      res.status(response.status).json(response);
+    });
+  });
+
+  //an endpoint to return table data
+  app.get("/api/search/:table", (req, res) => {
+    query.selectAll(req.params.table, "*", "").then(response => {
+      res.status(response.status).json({ response });
+    });
+  });
+};
+//==============================================================
+
+//private method for collecting match data
+var getMatchData = async function(id) {
+  //load the user match data
+  var matchQueryData = await query.convolutedThreeTableJoin(id);
+  if (matchQueryData.stats !== 200) {
+    console.log(matchQueryData);
+    return new Promise(resolve => {
+      resolve(matchQueryData);
+    });
+  }
+  //gather the data into an array
+  var results = [];
+  return new Promise(resolve => {
+    resolve(matchQueryData);
+  });
+};
+
+//private methods for handling survey submission
+//==============================================================
+
+//a function to save the user survey answers
+var saveAnswers = async function(data) {
+  //see if the user has taken the survey before
+  var test = await query.includes("scores", { user_id: data.user_id }, { survey_id: data.survey_id });
+  if (test.status === 500) {
+    throw new Error(test.reason);
+  }
+  if (test.test) {
+    //the user has taken the survey in the past
+    console.log("data exists, updating...");
+    query.update("scores", { answers: data.results }, { user_id: data.user_id }, { survey_id: data.survey_id });
+  } else {
+    console.log("no data present, inserting...");
+    query.insert("scores", { user_id: data.user_id, survey_id: data.survey_id, answers: data.results });
+  }
+};
+
+//a function to record the match data for the user and match
+var recordMatchData = async function(user_id, matchObject) {
+  //query data for the user/survey and the match/survey combinations
+  console.log(user_id);
+  console.log(matchObject);
+  var quickCheck = await query.twoColumnCheck(
+    "matches",
+    { user_id: user_id },
+    { survey_id: matchObject.survey_id },
+    { user_id: matchObject.match_id },
+    { survey_id: matchObject.survey_id }
+  );
+  if (quickCheck.status !== 200) {
+    console.log("error in quickcheck");
+    console.log(quickCheck);
+    return new Promise(resolve => {
+      resolve(quickCheck);
+    });
+  }
+  //this data will contain user/match/survey/score data
+  var userDataExists = false;
+  var matchDataExists = false;
+  var data = quickCheck.data;
+  data.forEach(entry => {
+    console.log("============================");
+    console.log(entry);
+    console.log("============================");
+    if (entry.user_id == user_id) {
+      console.log("user data exisits!");
+      userDataExists = true;
+    }
+    if (entry.user_id == matchObject.match_id) {
+      matchDataExists = true;
+      console.log("match data exists");
+    }
+  });
+
+  var response = {
+    status: 200,
+    reason: "success"
+  };
+  var updateUserData;
+  if (userDataExists) {
+    console.log("user data existis, updating...");
+    updateUserData = await query.update(
+      "matches",
+      { match_id: matchObject.match_id, score: matchObject.score },
+      { user_id: user_id },
+      { survey_id: matchObject.survey_id }
+    );
+  } else {
+    console.log("no user data, inserting...");
+    updateUserData = await query.insert("matches", {
+      user_id: user_id,
+      match_id: matchObject.match_id,
+      survey_id: matchObject.survey_id,
+      score: matchObject.score
+    });
+  }
+  var updateMatchData;
+  if (matchDataExists) {
+    updateMatchData = await query.update(
+      "matches",
+      { match_id: user_id, score: matchObject.score },
+      { user_id: matchObject.match_id },
+      { survey_id: matchObject.survey_id }
+    );
+  } else {
+    updateMatchData = await query.insert("matches", {
+      user_id: matchObject.match_id,
+      match_id: user_id,
+      survey_id: matchObject.survey_id,
+      score: matchObject.score
+    });
+  }
+
+  if (updateUserData.status !== 200) {
+    response.status = 500;
+    response.reason = "error updating user match data";
+  }
+  if (updateMatchData.status !== 200) {
+    response.status = 500;
+    response.reason = "error updating match data";
+  }
+  if (updateUserData.status !== 200 && updateMatchData.status !== 200) {
+    response.status = 500;
+    response.reason = "error updating all match data";
+  }
+  return new Promise(resolve => {
+    resolve(response);
+  });
+};
+//==============================================================
+
+//private routing methods for authentication
+//==============================================================
+//a function to generate a new user and insert the user into the user_profile table
+var createNewUser = async function(name, email, password) {
+  console.log(password);
+  //make sure the email address is unique
+  var testEmail = await query.includes("user_profile", { email: email });
+  if (testEmail.status !== 200) {
+    return new Promise(resolve => {
+      console.log("email failed in DB");
+      resolve(testEMail);
+    });
+  }
+  if (testEmail.test) {
+    testEmail.status = 409;
+    testEmail.reason = "That email is already associated with an account.";
+    return new Promise(resolve => {
+      console.log("email failed 409");
+      resolve(testEmail);
+    });
+  }
+  //make sure the name is unique
+  var testName = await query.includes("user_profile", { name: name });
+  if (testName.status !== 200)
+    return new Promise(resolve => {
+      console.log("name failed in db");
+      resolve(testName);
+    });
+  if (testName.test) {
+    testName.status = 409;
+    testName.reason = "That user name already exists.";
+    return new Promise(resolve => {
+      console.log("name failed 409");
+      resolve(testName);
+    });
+  }
+  //generate a key for the user
+  var key = crypto.pbkdf2Sync(password, email, 100000, 16, "sha512");
+  var token = key.toString("hex");
+  //build the user object
+  var userObject = {
+    token: token,
+    photo: "",
+    name: name,
+    email: email,
+    brand: "",
+    status: true
+  };
+  //add the user data to the database
+  var response = await query.insert("user_profile", userObject);
+  if (response.status === 500 || response === undefined) {
+    return new Promise(resolve => {
+      console.log("server error");
+      resolve(response);
+    });
+  }
+  var maskObject = {
+    status: 200,
+    reason: "user created successfully",
+    token: token,
+    name: name,
+    quantum: response.data.insertId,
+    photo: ""
+  };
+  return new Promise(resolve => {
+    console.log("resolving mask");
+    resolve(maskObject);
+  });
+};
+
+//a function to login an existing user with token authentication
+var loginUser = async function(email, password) {
+  //validate the email address
+  var emailTest = await query.includes("user_profile", { email: email });
+  if (!emailTest.test) {
+    //if the email doesn't exist in the database
+    return new Promise(resolve => {
+      resolve({
+        status: 409,
+        reason: "invalid email address"
+      });
+    });
+  }
+  var userData = emailTest.data[0];
+  var key = crypto.pbkdf2Sync(password, email, 100000, 16, "sha512");
+  var token = key.toString("hex");
+  //compare the tokens...
+  if (token === userData.token) {
+    //cool! login time!
+    await query.update("user_profile", { status: true }, { id: userData.id });
+    var maskObject = {
+      status: 200,
+      reason: "user created successfully",
+      token: token,
+      name: userData.name,
+      quantum: userData.id,
+      photo: userData.photo
+    };
+    return new Promise(resolve => {
+      resolve(maskObject);
+    });
+  }
+  //the token's don't match
+  return new Promise(resolve => {
+    resolve({
+      status: 409,
+      reason: "invalid password"
     });
   });
 };
 
-// private methods for authentication
-//===============================================================
-
-// a function which validates the presence or absence of data and returns a boolean based on the test case
-function validate(keyVal, test) {
-  return new Promise((resolve, reject) => {
-    //validation of the user_profile table will query for a key-value pair from the table.
-    //test <true|false> determines the validation type
-    //true -> the entry exists in the database
-    //false -> the entry is new / unique
-    connection.query("SELECT * FROM user_profile WHERE ?", keyVal, (err, data) => {
-      if (err) {
-        //this is a tough one to handle
-        reject(err);
-      }
-      if (test) return resolve(data.length === 1);
-      // exists and is unique
-      else return resolve(data.length === 0); // does not exist
-    });
-  });
-}
-
-// a function which validates the user email and password before creating and inserting the user data into the user_profile table and making a table_id table for the user
-function createUserProfile(salt, pass, user) {
-  return new Promise(resolve => {
-    //validate the email address
-    validate({ email: salt }, false).then(response => {
-      if (!response) {
-        return resolve({
-          status: 409,
-          reason: "an account exists for that email address"
-        });
-      }
-      // validate the user name
-      validate({ name: user }, false).then(response => {
-        if (!response) {
-          return resolve({
-            status: 409,
-            reason: "user name taken"
-          });
-        }
-        // both the name and email are new / unique
-        // genrate the user token
-        crypto.pbkdf2(pass, salt, 100000, 16, "sha512", (err, derivedKey) => {
-          if (err) {
-            return resolve({
-              status: 500,
-              reason: "error generating token"
-            });
-          }
-          //build the initial data object for the user
-          var userObject = {
-            name: user,
-            token: derivedKey.toString("hex"),
-            email: salt,
-            status: true
-          };
-          //insert the data into the user_profile database
-          connection.query("INSERT INTO user_profile SET ? ", userObject, (err, data) => {
-            if (err) {
-              return resolve({
-                status: 500,
-                reason: "error writing user profile"
-              });
-            }
-            //the data was written successfully
-            connection.query("SELECT * FROM user_profile WHERE ?", { token: derivedKey.toString("hex") }, (err, data) => {
-              if (err || data.length === 0) {
-                resolve({
-                  status: 500,
-                  reason: "error fetching user data"
-                });
-              }
-
-              //data holds the user data key-value pairs
-              var response = {
-                status: 200,
-                reason: "user created successfully",
-                token: derivedKey.toString("hex"),
-                name: user,
-                quantum: data[0].id,
-                photo: data[0].photo
-              };
-
-              //create a user table that will store survey names and corresponding match data
-              var sql = "CREATE TABLE table_" + response.quantum + " (survey_name VARCHAR(32), match_name VARCHAR(80), score INTEGER(11))";
-
-              connection.query(sql, (err, data) => {
-                if (err) {
-                  resolve({
-                    status: 500,
-                    reason: "error creating user table"
-                  });
-                }
-                resolve(response);
-              });
-            });
-          });
-        });
-      });
-    });
-  });
-}
-
-// a function which validates the user email before creating a token. The token is used to query the user_profile table to return the user data
-function loginUser(salt, pass) {
-  return new Promise(resolve => {
-    //validate the user email
-    validate({ email: salt }, true).then(response => {
-      if (!response) {
-        //the email does not exist in the database
-        resolve({
-          status: 409,
-          reason: "invalid email address"
-        });
-      }
-      // the email address exists. Create the token using the provided password
-      crypto.pbkdf2(pass, salt, 100000, 16, "sha512", (err, derivedKey) => {
-        if (err) {
-          return resolve({
-            status: 500,
-            reason: "error generating token"
-          });
-        }
-        //use the derived key to query the user_profile table and fetch the user data
-        connection.query("SELECT * FROM user_profile WHERE ?", { token: derivedKey.toString("hex") }, (err, data) => {
-          if (err) {
-            return resolve({
-              status: 500,
-              reason: "error fetching user profile"
-            });
-          }
-          if (data.length === 0) {
-            return resolve({
-              status: 409,
-              reason: "invalid password"
-            });
-          }
-          //the user data was fetched successfully. Build the user object
-          var response = {
-            status: 200,
-            reason: "user successfully logged in",
-            token: derivedKey.toString("hex"),
-            name: data[0].name,
-            quantum: data[0].id,
-            photo: data[0].photo
-          };
-          //update the user status to true ==> logged in
-          connection.query("UPDATE user_profile SET ? WHERE ?", [{ status: true }, { id: response.quantum }], err => {
-            if (err) {
-              return resolve({
-                status: 500,
-                reason: "error updating user status"
-              });
-            }
-            //the user status was updated successfully
-            resolve(response);
-          });
-        });
-      });
-    });
-  });
-}
+//

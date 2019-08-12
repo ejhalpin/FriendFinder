@@ -12,7 +12,7 @@ $(document).ready(() => {
     location.href = "/profile";
   }
   if (session) {
-    location.href = "/profile";
+    if (session.token) location.href = "/profile";
   }
 });
 
@@ -40,45 +40,72 @@ $("#auth-swap").on("click", () => {
 //submit the auth form
 $("#login-submit").on("click", event => {
   event.preventDefault();
-  var endpoint = "/auth";
   var text = $("#login-submit").text();
   var credentials = {
-    method: text,
     email: $("#login-email")
       .val()
       .trim(),
-    pass: $("#login-password")
+    password: $("#login-password")
       .val()
       .trim(),
-    user: ""
+    name: ""
   };
+  if (credentials.email.length === 0 || credentials.password.length === 0) {
+    $("#message").text("the fields can't be empty");
+    $("#alert")
+      .detach()
+      .appendTo($("#alert-row"));
+    return;
+  }
   if (text === "sign up") {
-    credentials.user = $("#signup-name")
+    text = "signup";
+    credentials.name = $("#signup-name")
       .val()
       .trim();
-    endpoint += "/newuser";
+    if (credentials.name.length === 0) {
+      $("#message").text("the fields can't be empty");
+      $("#alert")
+        .detach()
+        .appendTo($("#alert-row"));
+      return;
+    }
   }
-
+  console.log(credentials);
   // both sign up and login map to the same endpoint. The data returned by the server is placed in the session storage
-  $.post(endpoint, credentials).then(res => {
+  $.post("/auth/" + text, credentials, res => {
+    console.log(res);
     if (res.status === 409) {
-      //add some form error handling for non unique entries or incorrect email/password entries
+      $("#message").text(res.reason);
+      $("#alert")
+        .detach()
+        .appendTo($("#alert-row"));
+
       console.log(res.reason);
+      return;
     }
     if (res.status === 500) {
       //handle internal server errors on the server side, bro.
       console.log(res.reason);
+      return;
     }
+    if (res.status === 200) {
+      //set the friend finder data instance in session storage
+      var instance = {
+        token: res.token,
+        quantum: res.quantum,
+        photo: res.photo || "",
+        name: res.name
+      };
+      sessionStorage.setItem("instance", JSON.stringify(instance));
 
-    //set the friend finder data instance in session storage
-    var instance = {
-      token: res.token,
-      quantum: res.quantum,
-      photo: res.photo || "",
-      name: res.name
-    };
-    sessionStorage.setItem("instance", JSON.stringify(instance));
-
-    location.href = "/profile";
+      location.href = "/profile";
+    }
   });
+});
+
+$("#close").on("click", function() {
+  $("#alert")
+    .detach()
+    .appendTo($(".tooltray"));
+  $("#message").empty();
 });

@@ -35,6 +35,7 @@
 
 .text-right {
   flex: 1 1 auto;
+  color: darkgoldenrod;
 }
 
 .radiogroup {
@@ -86,4 +87,18 @@
 
 .endlabel {
   margin: 0 10px;
+}
+
+.button-box {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.hb-insert {
+  padding: 10px;
+  border-radius: 5px;
 }

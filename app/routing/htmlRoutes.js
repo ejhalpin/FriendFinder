@@ -16,6 +16,9 @@ module.exports = function(app) {
     res.sendFile(path.join(__dirname, "../public/profile.html"));
   });
 
+  app.get("/create", (req, res) => {
+    res.sendFile(path.join(__dirname, "../public/survey-gen.html"));
+  });
   // an endpoint to serve up the assets files for externally linked css and scripts
   // app.get("/assets/:dir/:file", (req, res) => {
   //   res.sendFile(path.join(__dirname, "../public/assets/" + req.params.dir + "/" + req.params.file));

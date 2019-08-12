@@ -19,6 +19,7 @@ create table user_profile
 create table surveys(
     name varchar(32),
     author varchar(50),
+    nq int,
     id int not null auto_increment,
     q0 varchar(180),
     q1 varchar(180),
@@ -39,11 +40,12 @@ create table surveys(
   );
 
 -- seed the survey table with the stock survey
-   insert into surveys (name,author,q0,q1,q2,q3,q4,q5,q6,q7,q8,q9)
+   insert into surveys (name,author,nq,q0,q1,q2,q3,q4,q5,q6,q7,q8,q9)
   values
     (
 		"profile survey",
         "friend finder",
+        10,
       "You often think about what you should have said in a conversation long after it has taken place.",
       "You enjoy vibrant social events with lots of people.",
       "If your friend is sad about something, your first instinct is to support them emotionally, not try to solve their problem.",
@@ -56,11 +58,13 @@ create table surveys(
       "You usually lose interest in a discussion when it gets philosophical."
 
 );
+
 create table scores(
 	survey_id int,
     user_id int,
     answers varchar(36)
 );
+
 
 create table matches(
 	survey_id int,
@@ -70,20 +74,5 @@ create table matches(
 );
   
   
-  
+
  
-  
-
-drop table scores_1;
-create table scores_1(
-	user_id int,
-    user_name varchar(80),
-    answers varchar (24)
-);
-
-select * from user_profile;
-
-select * from table_2;
-
-select * from scores_1;
-select * from surveys;

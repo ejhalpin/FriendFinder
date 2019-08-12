@@ -8,9 +8,14 @@
 {{#each data}}
 <div class="row">
   <div class="col-2">{{id}}</div>
-  <div class="col-5"><a href="/surveys/{{id}}">{{name}}</a></div>
-  <div class="col-2">{{num_questions}}</div>
-  <div class="col-3">{{created_by}}</div>
+  <div class="col-5"><a href="/survey/{{id}}">{{name}}</a></div>
+  <div class="col-2">{{nq}}</div>
+  <div class="col-3">{{author}}</div>
   <hr />
 </div>
 {{/each}}
+
+</div>
+<div class="text-center">
+  <button class="btn btn-primary" type="button" id="create">Create A Survey</button>
+</div>
