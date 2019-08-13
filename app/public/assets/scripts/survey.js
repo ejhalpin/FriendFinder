@@ -54,6 +54,9 @@ $("#submit").on("click", function() {
       $(".modal-body").append(
         '<p>You are the first to take this quiz, so there is no one to match you with. Why not take <a href="/surveys">another quiz</a> while you wait to be matched with a friend?'
       );
+      $("#loading-gif")
+        .detach()
+        .appendTo($(".tooltray"));
       $("#modal").modal("show");
       return;
     }
